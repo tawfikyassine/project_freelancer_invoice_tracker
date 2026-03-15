@@ -59,12 +59,17 @@ export default function DashboardPage() {
       }
       setUser(user)
 
-      // Fetch user plan
+      // Ensure user row exists — handles users who signed up before the DB trigger was installed
+      await supabase
+        .from('users')
+        .upsert({ id: user.id, email: user.email, plan: 'free' }, { onConflict: 'id', ignoreDuplicates: true })
+
+      // Fetch the current plan (may already be 'pro' if they upgraded)
       const { data: profile } = await supabase
         .from('users')
         .select('plan')
         .eq('id', user.id)
-        .single()
+        .maybeSingle()
 
       if (profile) setUserPlan(profile.plan)
 
