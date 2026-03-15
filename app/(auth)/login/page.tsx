@@ -1,18 +1,12 @@
+'use client'
+
 import Link from 'next/link'
 import { login } from '../actions'
-import { FileText } from 'lucide-react'
+import { FileText, Loader2, AlertCircle } from 'lucide-react'
+import { useActionState } from 'react'
 
-interface SearchParams {
-  error?: string
-}
-
-export default async function LoginPage({
-  searchParams,
-}: {
-  searchParams: Promise<SearchParams>
-}) {
-  const params = await searchParams
-  const error = params.error
+export default function LoginPage() {
+  const [state, formAction, isPending] = useActionState(login, null)
 
   return (
     <div className="min-h-screen bg-[#0a0a0f] flex items-center justify-center px-4">
@@ -30,13 +24,14 @@ export default async function LoginPage({
           <h1 className="text-2xl font-bold text-white mb-2">Welcome back</h1>
           <p className="text-gray-400 text-sm mb-8">Sign in to manage your invoices</p>
 
-          {error && (
-            <div className="bg-red-900/30 border border-red-500/30 text-red-400 rounded-xl px-4 py-3 text-sm mb-6">
-              {decodeURIComponent(error)}
+          {state?.error && (
+            <div className="bg-red-900/30 border border-red-500/30 text-red-400 rounded-xl px-4 py-3 text-sm mb-6 flex items-start gap-3">
+              <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
+              <span>{state.error}</span>
             </div>
           )}
 
-          <form action={login} className="space-y-5">
+          <form action={formAction} className="space-y-5">
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-300 mb-2">
                 Email
@@ -69,9 +64,17 @@ export default async function LoginPage({
 
             <button
               type="submit"
-              className="w-full bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white font-semibold py-3 rounded-xl transition-all duration-200 shadow-lg shadow-violet-500/20 hover:shadow-violet-500/30"
+              disabled={isPending}
+              className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white font-semibold py-3 rounded-xl transition-all duration-200 shadow-lg shadow-violet-500/20 hover:shadow-violet-500/30 disabled:opacity-70 disabled:cursor-not-allowed"
             >
-              Sign In
+              {isPending ? (
+                <>
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  Signing In...
+                </>
+              ) : (
+                'Sign In'
+              )}
             </button>
           </form>
 
@@ -81,6 +84,19 @@ export default async function LoginPage({
               Sign up free
             </Link>
           </p>
+
+          <div className="mt-8 pt-6 border-t border-white/10 text-center">
+            <p className="text-xs text-gray-500">
+              By signing in, you agree to our{' '}
+              <Link href="#" className="underline hover:text-gray-300 transition-colors">
+                Terms of Service
+              </Link>
+              {' '}and{' '}
+              <Link href="#" className="underline hover:text-gray-300 transition-colors">
+                Privacy Policy
+              </Link>.
+            </p>
+          </div>
         </div>
       </div>
     </div>
