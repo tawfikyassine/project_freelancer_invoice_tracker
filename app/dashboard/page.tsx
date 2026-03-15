@@ -329,6 +329,22 @@ export default function DashboardPage() {
                         <td className="px-6 py-4">
                           <div className="flex items-center justify-end gap-2">
                             <button
+                              onClick={(e) => {
+                                const btn = e.currentTarget
+                                const originalText = btn.innerText
+                                navigator.clipboard.writeText(`${window.location.origin}/invoice/${inv.id}`)
+                                btn.innerText = 'Copied!'
+                                btn.classList.add('text-emerald-600', 'bg-emerald-50')
+                                setTimeout(() => {
+                                  btn.innerText = 'Copy Link'
+                                  btn.classList.remove('text-emerald-600', 'bg-emerald-50')
+                                }, 2000)
+                              }}
+                              className="text-xs text-blue-600 hover:text-blue-700 font-semibold transition-colors px-3 py-1.5 rounded-lg hover:bg-blue-50"
+                            >
+                              Copy Link
+                            </button>
+                            <button
                               onClick={() => openEditModal(inv)}
                               className="text-xs text-violet-600 hover:text-violet-700 font-semibold transition-colors px-3 py-1.5 rounded-lg hover:bg-violet-50"
                             >
