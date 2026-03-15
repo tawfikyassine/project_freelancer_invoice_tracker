@@ -2,7 +2,10 @@ import { createClient } from '@/utils/supabase/server'
 import Link from 'next/link'
 import { FileText } from 'lucide-react'
 import Hero from '@/components/Hero'
+import HowItWorks from '@/components/HowItWorks'
+import Testimonials from '@/components/Testimonials'
 import Pricing from '@/components/Pricing'
+import FAQ from '@/components/FAQ'
 
 export default async function Home() {
   const supabase = await createClient()
@@ -49,11 +52,31 @@ export default async function Home() {
       </nav>
 
       <Hero />
+      <HowItWorks />
+      <Testimonials />
       <Pricing userId={user?.id} />
+      <FAQ />
 
       {/* Footer */}
-      <footer className="border-t border-white/5 py-8 px-6 text-center text-gray-600 text-sm">
-        <p>© 2025 InvoiceFlow. Stop chasing clients. Start getting paid.</p>
+      <footer className="border-t border-white/5 py-12 px-6">
+        <div className="max-w-5xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
+          <div className="flex items-center gap-2">
+            <div className="w-6 h-6 rounded-lg bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center">
+              <FileText className="w-3 h-3 text-white" />
+            </div>
+            <span className="font-bold text-gray-300">InvoiceFlow</span>
+          </div>
+          
+          <div className="flex gap-6 text-sm text-gray-500">
+            <Link href="#" className="hover:text-white transition-colors">Privacy Policy</Link>
+            <Link href="#" className="hover:text-white transition-colors">Terms of Service</Link>
+            <Link href="mailto:support@invoiceflow.com" className="hover:text-white transition-colors">Support</Link>
+          </div>
+          
+          <p className="text-gray-600 text-sm">
+            © 2025 InvoiceFlow. Stop chasing clients.
+          </p>
+        </div>
       </footer>
     </main>
   )
