@@ -17,6 +17,7 @@ export interface Invoice {
   due_date?: string
   description?: string
   notes?: string
+  payment_link?: string
   created_at: string
   updated_at: string
 }

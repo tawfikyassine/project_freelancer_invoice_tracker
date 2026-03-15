@@ -50,6 +50,7 @@ export default function DashboardPage() {
     due_date: '',
     description: '',
     notes: '',
+    payment_link: '',
   })
 
   useEffect(() => {
@@ -100,6 +101,7 @@ export default function DashboardPage() {
       due_date: '',
       description: '',
       notes: '',
+      payment_link: '',
     })
     setEditingInvoice(null)
     setModalMode('create')
@@ -115,6 +117,7 @@ export default function DashboardPage() {
       due_date: inv.due_date || '',
       description: inv.description || '',
       notes: inv.notes || '',
+      payment_link: inv.payment_link || '',
     })
     setEditingInvoice(inv)
     setModalMode('edit')
@@ -130,6 +133,24 @@ export default function DashboardPage() {
     if (!user) return
 
     if (modalMode === 'create') {
+      // Enforce subscription limits
+      const isFree = userPlan === 'free'
+      const isStarter = userPlan === 'starter'
+      const isPro = userPlan === 'pro'
+      
+      const MAX_FREE = 3;
+      const MAX_STARTER = 50;
+
+      if (isFree && invoices.length >= MAX_FREE) {
+        alert('You have reached the limit of 3 invoices on the Free plan. Please upgrade to create more.')
+        return
+      }
+
+      if (isStarter && invoices.length >= MAX_STARTER) {
+        alert('You have reached the limit of 50 invoices on the Starter plan. Please upgrade to Pro to create more.')
+        return
+      }
+
       const invoiceNumber = generateInvoiceNumber(invoices)
       const { data, error } = await supabase.from('invoices').insert({
         user_id: user.id,
@@ -142,6 +163,7 @@ export default function DashboardPage() {
         due_date: form.due_date || null,
         description: form.description || null,
         notes: form.notes || null,
+        payment_link: form.payment_link || null,
       }).select().single()
 
       if (!error && data) {
@@ -159,6 +181,7 @@ export default function DashboardPage() {
           due_date: form.due_date || null,
           description: form.description || null,
           notes: form.notes || null,
+          payment_link: form.payment_link || null,
           updated_at: new Date().toISOString(),
         })
         .eq('id', editingInvoice.id)
@@ -174,6 +197,7 @@ export default function DashboardPage() {
   }
 
   const handleDelete = async (id: string) => {
+    if (!window.confirm('Are you sure you want to delete this invoice? This action cannot be undone.')) return
     await supabase.from('invoices').delete().eq('id', id)
     setInvoices((prev) => prev.filter((inv) => inv.id !== id))
   }
@@ -188,6 +212,15 @@ export default function DashboardPage() {
       </div>
     )
   }
+
+  const isFree = userPlan === 'free'
+  const isStarter = userPlan === 'starter'
+  const isPro = userPlan === 'pro'
+  
+  const MAX_FREE = 3;
+  const MAX_STARTER = 50;
+
+  const atLimit = (isFree && invoices.length >= MAX_FREE) || (isStarter && invoices.length >= MAX_STARTER)
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -207,14 +240,24 @@ export default function DashboardPage() {
                 PRO
               </span>
             )}
+            {userPlan === 'starter' && (
+              <span className="bg-blue-100 text-blue-700 text-xs font-semibold px-2.5 py-1 rounded-full ml-2">
+                STARTER
+              </span>
+            )}
           </div>
 
           <div className="flex items-center gap-3">
             <button
-              onClick={openCreateModal}
-              className="flex items-center gap-2 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white text-sm font-semibold px-4 py-2 rounded-xl transition-all shadow-sm shadow-violet-500/20"
+              onClick={atLimit ? undefined : openCreateModal}
+              disabled={atLimit}
+              className={`flex items-center gap-2 text-sm font-semibold px-4 py-2 rounded-xl transition-all shadow-sm ${
+                atLimit 
+                  ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
+                  : 'bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white shadow-violet-500/20'
+              }`}
             >
-              <Plus className="w-4 h-4" /> New Invoice
+              <Plus className="w-4 h-4" /> {atLimit ? 'Limit Reached' : 'New Invoice'}
             </button>
             <form action="/dashboard/logout" method="POST">
               <button
@@ -229,6 +272,30 @@ export default function DashboardPage() {
       </header>
 
       <main className="max-w-6xl mx-auto px-6 py-8">
+        {/* Upgrade Banner for Limits */}
+        {atLimit && !isPro && (
+          <div className="mb-8 bg-red-50 border border-red-100 rounded-2xl p-6 flex flex-col md:flex-row items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <AlertCircle className="w-6 h-6 text-red-500" />
+              <div>
+                <p className="font-bold text-red-900 text-base">You've reached your plan limit</p>
+                <p className="text-red-700 text-sm">
+                  {isFree ? 'Free users can create up to 3 invoices.' : 'Starter users can create up to 50 invoices.'} 
+                  {' '}Upgrade your plan to create more.
+                </p>
+              </div>
+            </div>
+            <a
+              href={`${process.env.NEXT_PUBLIC_STRIPE_PRO_LINK}?client_reference_id=${user?.id}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex-shrink-0 bg-red-600 text-white font-bold px-6 py-2.5 rounded-xl text-sm hover:bg-red-700 transition-colors shadow-sm"
+            >
+              Upgrade Now
+            </a>
+          </div>
+        )}
+
         {/* Summary Cards */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
           <SummaryCard
@@ -343,6 +410,21 @@ export default function DashboardPage() {
                               className="text-xs text-blue-600 hover:text-blue-700 font-semibold transition-colors px-3 py-1.5 rounded-lg hover:bg-blue-50"
                             >
                               Copy Link
+                            </button>
+                            <button
+                              onClick={() => {
+                                if (isFree) {
+                                  alert('Emailing invoices is a Starter & Pro feature. Please upgrade your plan.')
+                                  return
+                                }
+                                const url = `${window.location.origin}/invoice/${inv.id}`
+                                const subject = encodeURIComponent(`Invoice ${inv.invoice_number} from InvoiceFlow`)
+                                const body = encodeURIComponent(`Hi ${inv.client_name || 'there'},\n\nHere is your invoice for ${formatCurrency(inv.amount, inv.currency)}.\n\nYou can view and pay it securely online here: ${url}\n\nThank you for your business!`)
+                                window.location.href = `mailto:${inv.client_email || ''}?subject=${subject}&body=${body}`
+                              }}
+                              className="text-xs text-indigo-600 hover:text-indigo-700 font-semibold transition-colors px-3 py-1.5 rounded-lg hover:bg-indigo-50"
+                            >
+                              Send Email
                             </button>
                             <button
                               onClick={() => openEditModal(inv)}
@@ -473,6 +555,27 @@ export default function DashboardPage() {
                     value={form.due_date}
                     onChange={(e) => setForm((f) => ({ ...f, due_date: e.target.value }))}
                     className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500/30 focus:border-violet-400 transition-all"
+                  />
+                </div>
+
+                <div className="col-span-2">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wide">
+                      Stripe Payment Link URL
+                    </label>
+                    {!isPro && (
+                      <span className="bg-gradient-to-r from-amber-200 to-yellow-400 text-yellow-900 text-[10px] uppercase tracking-wider font-bold px-2 py-0.5 rounded-md">
+                        Pro Feature
+                      </span>
+                    )}
+                  </div>
+                  <input
+                    type="url"
+                    disabled={!isPro}
+                    value={form.payment_link}
+                    onChange={(e) => setForm((f) => ({ ...f, payment_link: e.target.value }))}
+                    placeholder={isPro ? "https://buy.stripe.com/..." : "Upgrade to Pro to accept online payments"}
+                    className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500/30 focus:border-violet-400 transition-all disabled:bg-gray-50 disabled:text-gray-400 disabled:cursor-not-allowed"
                   />
                 </div>
 

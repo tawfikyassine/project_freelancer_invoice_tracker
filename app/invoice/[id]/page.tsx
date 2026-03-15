@@ -89,8 +89,24 @@ export default async function PublicInvoicePage({ params }: { params: Promise<{ 
           </div>
 
           {/* Total */}
-          <div className="flex justify-end p-6 bg-gray-50 rounded-2xl border border-gray-100 mb-12">
-            <div className="text-right">
+          <div className="flex flex-col sm:flex-row justify-between items-end sm:items-center p-6 bg-gray-50 rounded-2xl border border-gray-100 mb-12 gap-6">
+            {invoice.payment_link ? (
+              <div className="w-full sm:w-auto">
+                <a
+                  href={invoice.payment_link}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-center gap-2 bg-gradient-to-r from-violet-600 to-indigo-600 text-white font-bold px-8 py-4 rounded-xl shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all text-lg w-full sm:w-auto"
+                >
+                  <ShieldCheck className="w-5 h-5" />
+                  Pay Now with Stripe
+                </a>
+                <p className="text-xs text-gray-400 mt-2 text-center sm:text-left">Secure, 1-click payment</p>
+              </div>
+            ) : (
+              <div className="w-full sm:w-auto"></div>
+            )}
+            <div className="text-right w-full sm:w-auto border-t border-gray-200 sm:border-t-0 pt-4 sm:pt-0">
               <p className="text-sm font-semibold text-gray-500 uppercase tracking-widest mb-1">Amount Due</p>
               <p className="text-4xl font-black text-gray-900 tracking-tight">
                 {formatCurrency(invoice.amount, invoice.currency)}
